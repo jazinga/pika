@@ -45,7 +45,8 @@ class AsyncoreDispatcher(asyncore.dispatcher):
         self._timeouts = dict()
         self.map = None
 
-        # Set our remaining attempts to the value or True if it's none
+        # Set our remaining attempts to the value or True if it's None
+        # Note: True means only make *one* attempt
         remaining_attempts = self.parameters.connection_attempts or True
 
         # Loop while we have remaining attempts
