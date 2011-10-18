@@ -8,7 +8,7 @@ from random import random
 
 
 class ReconnectionStrategy(object):
-
+    """Interface defining the entry points available for ReconnectionStrategy subclasses"""
     can_reconnect = False
     _active = True
 
@@ -20,30 +20,37 @@ class ReconnectionStrategy(object):
         ReconnectionStrategy._active = value
 
     def on_connect_attempt(self, conn):
-        pass
+        """Called each time the connection attempts to connect to the server"""
 
     def on_connect_attempt_failure(self, conn, err):
         """Called by the connection on failure to establish initial connection"""
 
     def on_transport_connected(self, conn):
-        pass
+        """Called when the connection's low-level transport is connected"""
 
     def on_transport_disconnected(self, conn):
-        pass
+        """Called when the connection's low-level transport is disconnected"""
 
     def on_connection_open(self, conn):
-        pass
+        """Called when a connection has been opened, negotiated, and is ready-to-run"""
 
     def on_connection_closed(self, conn):
-        pass
-
+        """Called when a connection has been closed"""
 
 class NullReconnectionStrategy(ReconnectionStrategy):
     pass
 
 
 class SimpleReconnectionStrategy(ReconnectionStrategy):
-
+    """Strategy for keeping up a persistent connection 
+    
+    On connection failure or closure, will delay by:
+    
+        current_delay = current_delay * (1 + (0.5*random.random()))
+        (to a maximum of self.max_delay)
+    
+    then issue a reconnect (via a timeout).
+    """
     can_reconnect = True
 
     def __init__(self, initial_retry_delay=1.0, multiplier=2.0,
@@ -60,19 +67,21 @@ class SimpleReconnectionStrategy(ReconnectionStrategy):
         self.attempts_since_last_success = 0
 
     def on_connect_attempt(self, conn):
+        """Increments our attempt counter"""
         self.attempts_since_last_success += 1
     def on_connect_attempt_failure(self, conn, err):
         """Called by the connection on failure to establish initial connection"""
-        warning( "Connection failure: %s", err )
+        warning( "Connection failure (attempt %s): %s", self.attempts_since_last_success, err )
         self.on_connection_closed( conn )
 
     def on_connection_open(self, conn):
+        """Reset our internal counters"""
         self._reset()
 
     def on_connection_closed(self, conn):
+        """Calculate our reconnection delay, create a timeout to issue a _reconnect"""
         if not self.is_active:
             return
-
         t = self.current_delay * ((random() * self.jitter) + 1)
         info("%s retrying %r in %r seconds (%r attempts)",
                  self.__class__.__name__, conn.parameters, t,
