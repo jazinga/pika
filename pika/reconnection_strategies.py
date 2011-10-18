@@ -72,20 +72,21 @@ class SimpleReconnectionStrategy(ReconnectionStrategy):
     def on_connect_attempt_failure(self, conn, err):
         """Called by the connection on failure to establish initial connection"""
         warning( "Connection failure (attempt %s): %s", self.attempts_since_last_success, err )
-        self.on_connection_closed( conn )
 
     def on_connection_open(self, conn):
         """Reset our internal counters"""
         self._reset()
-
+    
+    def new_delay( self ):
+        t = self.current_delay * ((random() * self.jitter) + 1) * self.multiplier
+        self.current_delay = min(self.max_delay,t)
+        return self.current_delay
     def on_connection_closed(self, conn):
         """Calculate our reconnection delay, create a timeout to issue a _reconnect"""
         if not self.is_active:
             return
-        t = self.current_delay * ((random() * self.jitter) + 1)
+        t = self.new_delay()
         info("%s retrying %r in %r seconds (%r attempts)",
                  self.__class__.__name__, conn.parameters, t,
                  self.attempts_since_last_success)
-        self.current_delay = min(self.max_delay,
-                                 self.current_delay * self.multiplier)
         conn.add_timeout(t, conn._reconnect)
