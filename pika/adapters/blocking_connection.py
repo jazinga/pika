@@ -30,6 +30,7 @@ class BlockingConnection(BaseConnection):
     """
 
     def __init__(self, parameters=None, reconnection_strategy=None):
+        self._timeouts = dict()
         BaseConnection.__init__(self, parameters, None, reconnection_strategy)
 
     def _adapter_connect(self):
@@ -39,7 +40,6 @@ class BlockingConnection(BaseConnection):
         self.socket.settimeout(SOCKET_TIMEOUT)
         self._socket_timeouts = 0
         self._on_connected()
-        self._timeouts = dict()
         while not self.is_open:
             self._flush_outbound()
             self._handle_read()
