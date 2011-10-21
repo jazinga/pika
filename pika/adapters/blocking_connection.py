@@ -203,9 +203,14 @@ class BlockingChannelTransport(ChannelTransport):
         replies = list()
         if acceptable_replies:
             for reply in acceptable_replies:
-                prefix, key = self.callbacks.add(self.channel_number,
-                                                 reply,
-                                                 self._on_rpc_complete)
+                try:
+                    prefix, key = self.callbacks.add(self.channel_number,
+                                                     reply,
+                                                     self._on_rpc_complete)
+                except TypeError, err:
+                    # Callbacks object returned None instead of signalling 
+                    # an error, we want to handle the reply anyway...
+                    pass
                 replies.append(key)
 
         # Send the method
