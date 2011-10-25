@@ -211,7 +211,8 @@ class BlockingChannelTransport(ChannelTransport):
                     # Callbacks object returned None instead of signalling 
                     # an error, we want to handle the reply anyway...
                     pass
-                replies.append(key)
+                else:
+                    replies.append(key)
 
         # Send the method
         self._received_response = False
