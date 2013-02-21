@@ -76,3 +76,5 @@ class HeartbeatChecker(object):
         # our interval
         if self.connection.heartbeat is self:
             self.setup_timer()
+        else:
+            self._idle_byte_intervals = 0
