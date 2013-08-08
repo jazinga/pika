@@ -85,23 +85,27 @@ class BlockingConnection(BaseConnection):
                 log.error(SOCKET_TIMEOUT_MESSAGE)
                 self._handle_disconnect()
 
-    def process_data_events(self):
+    def process_data_events(self, write_only=False):
         # Make sure we're open, if not raise the exception
         if not self.is_open and not self.is_closing:
             raise AMQPConnectionError
 
-        # Read data
-        try:
-            self._handle_read()
-            self._socket_timeouts = 0
-        except socket.timeout:
-            self._socket_timeouts += 1
-            if self._socket_timeouts > SOCKET_TIMEOUT_THRESHOLD:
-                log.error(SOCKET_TIMEOUT_MESSAGE)
-                self._handle_disconnect()
+        # PATCH #0045: Fixes problem with recursing into a read callback
+        # while doing a write (in case you put a message back on your
+        # own queue)
+        if not write_only:
+            # Read data
+            try:
+                self._handle_read()
+                self._socket_timeouts = 0
+            except socket.timeout:
+                self._socket_timeouts += 1
+                if self._socket_timeouts > SOCKET_TIMEOUT_THRESHOLD:
+                    log.error(SOCKET_TIMEOUT_MESSAGE)
+                    self._handle_disconnect()
 
-        # Process our timeout events
-        self.process_timeouts()
+            # Process our timeout events
+            self.process_timeouts()
 
         # Write our data
         self._flush_outbound()
@@ -251,7 +255,8 @@ class BlockingChannelTransport(ChannelTransport):
 
         # Wait until the outbound buffer is empty
         while self.connection.outbound_buffer.size > 0:
-            self.connection.process_data_events()
+            # PATCH #0045: pass in the new flag the patch created
+            self.connection.process_data_events(write_only=True)
 
         # Wait for a response if needed
         while self.wait and not self._received_response:
