@@ -374,6 +374,50 @@ class Connection(pika.object.Class):
             pieces = list()
             return pieces
 
+    class Blocked(pika.object.Method):
+
+        INDEX = 0x000A003C  # 10, 60; 655420
+        NAME = 'Connection.Blocked'
+
+        def __init__(self, reason=''):
+            self.reason = reason
+
+        @property
+        def synchronous(self):
+            return False
+
+        def decode(self, encoded, offset=0):
+            length = struct.unpack_from('B', encoded, offset)[0]
+            offset += 1
+            self.reason = encoded[offset:offset + length]
+            offset += length
+            return self
+
+        def encode(self):
+            pieces = list()
+            pieces.append(struct.pack('B', len(self.reason)))
+            pieces.append(self.reason)
+            return pieces
+
+    class Unblocked(pika.object.Method):
+
+        INDEX = 0x000A003D  # 10, 61; 655421
+        NAME = 'Connection.Unblocked'
+
+        def __init__(self):
+            pass
+
+        @property
+        def synchronous(self):
+            return False
+
+        def decode(self, encoded, offset=0):
+            return self
+
+        def encode(self):
+            pieces = list()
+            return pieces
+
 
 class Channel(pika.object.Class):
 
@@ -2296,6 +2340,8 @@ methods = {
     0x000A0029: Connection.OpenOk,
     0x000A0032: Connection.Close,
     0x000A0033: Connection.CloseOk,
+    0x000A003C: Connection.Blocked,
+    0x000A003D: Connection.Unblocked,
     0x0014000A: Channel.Open,
     0x0014000B: Channel.OpenOk,
     0x00140014: Channel.Flow,
@@ -2347,11 +2393,11 @@ methods = {
     0x005A001E: Tx.Rollback,
     0x005A001F: Tx.RollbackOk,
     0x0055000A: Confirm.Select,
-    0x0055000B: Confirm.SelectOk
+    0x0055000B: Confirm.SelectOk,
 }
 
 props = {
-    0x003C: BasicProperties
+    0x003C: BasicProperties,
 }
 
 

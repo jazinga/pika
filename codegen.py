@@ -31,8 +31,8 @@ DRIVER_METHODS = {
     "Basic.RecoverAsync": [],
     "Tx.Select": ["Tx.SelectOk"],
     "Tx.Commit": ["Tx.CommitOk"],
-    "Tx.Rollback": ["Tx.RollbackOk"]
-    }
+    "Tx.Rollback": ["Tx.RollbackOk"],
+}
 
 
 def fieldvalue(v):
